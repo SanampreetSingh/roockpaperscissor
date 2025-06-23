@@ -1,34 +1,35 @@
 <?php
 session_start();
-
 $room = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room'] ?? '');
 $player = $_GET['id'] ?? '';
-
 if (empty($room) || empty($player)) {
     header("Location: online.php?error=invalid_parameters");
     exit;
 }
-
-// Check if room exists in session
-if (!isset($_SESSION['rooms'][$room])) {
+// Fix: Verify room exists in session
+if (empty($_SESSION['rooms'][$room])) {
     header("Location: online.php?error=room_not_found");
     exit;
 }
-
 // Update player activity
 $_SESSION['rooms'][$room]['players'][$player]['last_active'] = time();
+// Fix: Count only active players (not timed out)
+$active_players = 0;
+foreach ($_SESSION['rooms'][$room]['players'] as $p) {
+    if (time() - $p['last_active'] < 30) {
+        $active_players++;
+    }
+}
 
-// Check if opponent has joined
-if (count($_SESSION['rooms'][$room]['players']) === 2) {
-    $opponent = '';
+// If we have two active players, start the game
+if ($active_players === 2) {
     foreach ($_SESSION['rooms'][$room]['players'] as $id => $p) {
         if ($id !== $player) {
             $opponent = $p['name'];
-            break;
+            header("Location: play_online.php?room=$room&id=$player&opponent=".urlencode($opponent));
+            exit;
         }
     }
-    header("Location: play_online.php?room=$room&id=$player&opponent=".urlencode($opponent));
-    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -54,6 +55,7 @@ if (count($_SESSION['rooms'][$room]['players']) === 2) {
     </style>
 </head>
 <body>
+        <p>Connected ACTIVE players: <?= $active_players ?>/2</p>
     <h2>Waiting for opponent...</h2>
     <p>Room: <strong><?= htmlspecialchars($room) ?></strong></p>
     <p>Connected players: <?= count($_SESSION['rooms'][$room]['players']) ?>/2</p>
