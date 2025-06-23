@@ -1,57 +1,93 @@
-<!-- Add this CSS -->
-<style>
-.choice-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-}
+<?php
+session_start();
+$player = $_GET['id'];
+$opponent = $_GET['opponent'];
+$room = $_GET['room'];
 
-@media (min-width: 768px) {
-  .choice-container {
-    flex-direction: row;
-    justify-content: center;
-  }
-}
+// Store game info in session
+$_SESSION['current_game'] = [
+    'room' => $room,
+    'player_id' => $player,
+    'opponent' => $opponent
+];
+?>
 
-.choice {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 15px;
-  border: 2px solid #ddd;
-  border-radius: 50%;
-  width: 80px;
-  height: 80px;
-  cursor: pointer;
-  transition: all 0.3s;
-  font-size: 40px;
-  margin: 5px;
-}
-
-.choice:hover {
-  border-color: #6a11cb;
-  transform: scale(1.1);
-}
-
-input[type="radio"]:checked + .choice {
-  border-color: #6a11cb;
-  background-color: rgba(106, 17, 203, 0.1);
-}
-</style>
-
-<!-- Updated choices section -->
-<div class="choice-container">
-  <label>
-    <input type="radio" name="choice" value="rock" required>
-    <span class="choice">✊</span>
-  </label>
-  <label>
-    <input type="radio" name="choice" value="paper">
-    <span class="choice">✋</span>
-  </label>
-  <label>
-    <input type="radio" name="choice" value="scissors">
-    <span class="choice">✌️</span>
-  </label>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Game</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/game.css">
+  <style>
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .scoreboard {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+      width: 100%;
+      max-width: 400px;
+    }
+    
+    .action-buttons {
+      margin-top: 30px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Playing against <?= htmlspecialchars($opponent) ?></h1>
+    
+    <div class="scoreboard">
+      <h3>Scoreboard</h3>
+      <p>Wins: <?= $_SESSION['online_score']['win'] ?? 0 ?></p>
+      <p>Losses: <?= $_SESSION['online_score']['lose'] ?? 0 ?></p>
+      <p>Ties: <?= $_SESSION['online_score']['tie'] ?? 0 ?></p>
+    </div>
+    
+    <form action="result_online.php" method="POST">
+      <input type="hidden" name="room" value="<?= htmlspecialchars($room) ?>">
+      <input type="hidden" name="player" value="<?= htmlspecialchars($player) ?>">
+      <input type="hidden" name="opponent" value="<?= htmlspecialchars($opponent) ?>">
+      
+      <div class="choice-container">
+        <label class="choice">
+          <input type="radio" name="choice" value="rock" required>
+          <span class="icon">✊</span>
+          Rock
+        </label>
+        <label class="choice">
+          <input type="radio" name="choice" value="paper">
+          <span class="icon">✋</span>
+          Paper
+        </label>
+        <label class="choice">
+          <input type="radio" name="choice" value="scissors">
+          <span class="icon">✌️</span>
+          Scissors
+        </label>
+      </div>
+      
+      <div class="action-buttons">
+        <button type="submit" class="game-btn">Submit Move</button>
+        <a href="play_online.php?room=<?= $room ?>&id=<?= $player ?>&opponent=<?= urlencode($opponent) ?>" 
+           class="game-btn">Play Again</a>
+        <a href="index.php" class="game-btn">Main Menu</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

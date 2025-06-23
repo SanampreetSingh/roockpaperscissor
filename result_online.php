@@ -3,71 +3,82 @@ session_start();
 $room = $_POST['room'];
 $player = $_POST['player'];
 $choice = $_POST['choice'];
+$opponent = $_POST['opponent'];
 
 $path = "storage/rooms/$room.json";
-$data = json_decode(file_get_contents($path), true);
 
-// Save this player's choice
+// Initialize score if not exists
+if (!isset($_SESSION['online_score'])) {
+    $_SESSION['online_score'] = ['win' => 0, 'lose' => 0, 'tie' => 0];
+}
+
+// Check if opponent left
+if (!file_exists($path)) {
+    header("Location: waiting.php?room=$room&player=$player&opponent=".urlencode($opponent));
+    exit;
+}
+
+$data = json_decode(file_get_contents($path), true);
 $data[$player]['choice'] = $choice;
 file_put_contents($path, json_encode($data));
 
-// Wait for second player
+// Wait for opponent's move
 $opponentChoice = null;
 $wait = 0;
 
 while ($wait < 10) {
     $data = json_decode(file_get_contents($path), true);
-    $otherPlayer = null;
-
-    foreach ($data['players'] as $id => $info) {
-        if ($id !== $player && $info['choice'] !== null) {
+    
+    foreach ($data as $id => $info) {
+        if ($id !== $player && isset($info['choice'])) {
             $opponentChoice = $info['choice'];
-            $otherPlayer = $id;
             break;
         }
     }
-
+    
     if ($opponentChoice !== null) break;
     sleep(1);
     $wait++;
 }
 
 function getResult($you, $them) {
-    if ($you === $them) return "It's a tie!";
+    if ($you === $them) return "tie";
     if (
         ($you == 'rock' && $them == 'scissors') ||
         ($you == 'scissors' && $them == 'paper') ||
         ($you == 'paper' && $them == 'rock')
-    ) return "You win!";
-    return "You lose!";
+    ) return "win";
+    return "lose";
 }
 
 if ($opponentChoice) {
     $result = getResult($choice, $opponentChoice);
-    unlink("storage/rooms/$room.json"); // Clean room
+    $_SESSION['online_score'][$result]++;
+    unlink($path);
 } else {
-    $result = "Opponent did not respond in time.";
+    $result = "Opponent did not respond in time";
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Match Result</title>
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/game.css">
-</head>
-<body>
-  <div class="container">
-    <h2>Online Game Result</h2>
-    <p>You chose: <strong><?= htmlspecialchars($choice) ?></strong></p>
-    <p>Opponent chose: <strong><?= htmlspecialchars($opponentChoice ?? 'No response') ?></strong></p>
-    <h3><?= $result ?></h3>
-    <div class="btn-group">
-      <a href="index.php" class="game-btn">Back to Main Menu</a>
-    </div>
+<html>
+<!-- Result display with score and options -->
+<div class="result-container">
+  <h2>Game Result</h2>
+  <p>You chose: <?= htmlspecialchars($choice) ?></p>
+  <p>Opponent chose: <?= htmlspecialchars($opponentChoice ?? 'No response') ?></p>
+  <h3><?= $result ?></h3>
+  
+  <div class="scoreboard">
+    <h4>Current Score</h4>
+    <p>Wins: <?= $_SESSION['online_score']['win'] ?></p>
+    <p>Losses: <?= $_SESSION['online_score']['lose'] ?></p>
+    <p>Ties: <?= $_SESSION['online_score']['tie'] ?></p>
   </div>
-</body>
-</html>
+  
+  <div class="action-buttons">
+    <a href="play_online.php?room=<?= $room ?>&id=<?= $player ?>&opponent=<?= urlencode($opponent) ?>" 
+       class="game-btn">Play Again</a>
+    <a href="index.php" class="game-btn">Main Menu</a>
+  </div>
+</div>
