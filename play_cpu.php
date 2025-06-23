@@ -1,49 +1,35 @@
-<?php
-$choices = ['rock', 'paper', 'scissors'];
-$userChoice = null;
-$computerChoice = null;
-$result = null;
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['choice'])) {
-    $userChoice = $_POST['choice'];
-    $computerChoice = $choices[array_rand($choices)];
-
-    function getResult($user, $computer) {
-        if ($user == $computer) return "It's a tie!";
-        if (
-            ($user == 'rock' && $computer == 'scissors') ||
-            ($user == 'scissors' && $computer == 'paper') ||
-            ($user == 'paper' && $computer == 'rock')
-        ) return "You win!";
-        return "Computer wins!";
-    }
-
-    $result = getResult($userChoice, $computerChoice);
-}
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Play vs Computer</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
-  <h1>Rock Paper Scissors - VS Computer</h1>
-
-  <form method="POST">
-    <label>Choose:</label><br>
-    <input type="radio" name="choice" value="rock" required> Rock<br>
-    <input type="radio" name="choice" value="paper"> Paper<br>
-    <input type="radio" name="choice" value="scissors"> Scissors<br><br>
-    <button type="submit">Play</button>
-  </form>
-
-  <?php if ($userChoice !== null): ?>
-    <h2>Result</h2>
-    <p>You chose: <strong><?= htmlspecialchars($userChoice) ?></strong></p>
-    <p>Computer chose: <strong><?= $computerChoice ?></strong></p>
-    <h3><?= $result ?></h3>
-  <?php endif; ?>
+  <div class="container">
+    <h2>Choose Your Move</h2>
+    <form method="POST" action="result_cpu.php">
+      <div class="choice-container">
+        <label class="choice">
+          <input type="radio" name="choice" value="rock" required>
+          <span class="icon rock">✊</span>
+          Rock
+        </label>
+        <label class="choice">
+          <input type="radio" name="choice" value="paper">
+          <span class="icon paper">✋</span>
+          Paper
+        </label>
+        <label class="choice">
+          <input type="radio" name="choice" value="scissors">
+          <span class="icon scissors">✌️</span>
+          Scissors
+        </label>
+      </div>
+      <button type="submit" class="game-btn">Play</button>
+    </form>
+  </div>
 </body>
 </html>
