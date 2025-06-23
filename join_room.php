@@ -1,25 +1,24 @@
 <?php
 session_start();
 
-// Validate input
-$room = isset($_GET['room']) ? preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room']) : '';
-$player_name = isset($_GET['player_name']) ? htmlspecialchars($_GET['player_name']) : 'Player';
+$room = substr(preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room'] ?? ''), 0, 20);
+$player_name = substr(htmlspecialchars($_GET['player_name'] ?? ''), 0, 20);
 
 if (empty($room) || empty($player_name)) {
     header("Location: online.php?error=invalid_input");
     exit;
 }
 
-// Check if room exists and has space
-if (empty($_SESSION['rooms'][$room])) {
+// Verify room exists and has space
+if (!isset($_SESSION['rooms'][$room])) {
     header("Location: online.php?error=room_not_found");
     exit;
 }
 
-// Fix: Properly count active players (only count those who haven't timed out)
+// Count active players (not timed out)
 $active_players = 0;
 foreach ($_SESSION['rooms'][$room]['players'] as $player) {
-    if (time() - $player['last_active'] < 30) { // 30-second timeout
+    if (time() - $player['last_active'] < 30) {
         $active_players++;
     }
 }
@@ -29,8 +28,8 @@ if ($active_players >= 2) {
     exit;
 }
 
-// Add player to room
-$player_id = uniqid();
+// Add new player
+$player_id = uniqid('player_', true);
 $_SESSION['rooms'][$room]['players'][$player_id] = [
     'name' => $player_name,
     'choice' => null,
@@ -38,7 +37,14 @@ $_SESSION['rooms'][$room]['players'][$player_id] = [
 ];
 
 // Get opponent name
-$opponent = $_SESSION['rooms'][$room]['creator_name'];
-header("Location: play_online.php?room=$room&id=$player_id&opponent=".urlencode($opponent));
+$opponent_name = '';
+foreach ($_SESSION['rooms'][$room]['players'] as $id => $player) {
+    if ($id !== $player_id) {
+        $opponent_name = $player['name'];
+        break;
+    }
+}
+
+header("Location: play_online.php?room=".urlencode($room)."&player_id=".urlencode($player_id)."&opponent=".urlencode($opponent_name));
 exit;
 ?>

@@ -1,20 +1,20 @@
 <?php
 session_start();
 
-$room = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room'] ?? '');
-$player = $_GET['player'] ?? '';
+$room = substr(preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room'] ?? ''), 0, 20);
+$player_id = $_GET['player'] ?? '';
 $opponent = $_GET['opponent'] ?? '';
 
-if (empty($room) || empty($player)) {
+if (empty($room) || empty($player_id) || !isset($_SESSION['rooms'][$room])) {
     header("Location: online.php?error=invalid_parameters");
     exit;
 }
 
-// Check if room exists and opponent reconnected
+// Check if opponent reconnected
 if (isset($_SESSION['rooms'][$room])) {
-    foreach ($_SESSION['rooms'][$room]['players'] as $id => $p) {
-        if ($id !== $player && (time() - ($p['last_active'] ?? 0)) < 30) {
-            header("Location: play_online.php?room=$room&id=$player&opponent=".urlencode($p['name']));
+    foreach ($_SESSION['rooms'][$room]['players'] as $id => $player) {
+        if ($id !== $player_id && (time() - ($player['last_active'] ?? 0)) < 30) {
+            header("Location: play_online.php?room=".urlencode($room)."&player_id=".urlencode($player_id)."&opponent=".urlencode($player['name']));
             exit;
         }
     }
@@ -23,16 +23,33 @@ if (isset($_SESSION['rooms'][$room])) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Opponent Disconnected</title>
+    <title>Waiting</title>
     <meta http-equiv="refresh" content="5">
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+        }
         .spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #6a11cb;
+            border: 4px solid rgba(0,0,0,0.1);
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            border-top: 4px solid #6a11cb;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
@@ -43,11 +60,12 @@ if (isset($_SESSION['rooms'][$room])) {
     </style>
 </head>
 <body>
-    <h2>Opponent Disconnected</h2>
-    <p>Waiting for <?= htmlspecialchars($opponent) ?> to reconnect...</p>
-    <p>Room: <strong><?= htmlspecialchars($room) ?></strong></p>
-    <div class="spinner"></div>
-    <p>This page refreshes automatically every 5 seconds</p>
-    <a href="index.php">Leave Game</a>
+    <div class="container">
+        <h2>Opponent Disconnected</h2>
+        <p>Waiting for <?= htmlspecialchars($opponent) ?> to reconnect...</p>
+        <div class="spinner"></div>
+        <p>This page refreshes automatically every 5 seconds</p>
+        <a href="index.php">Leave Game</a>
+    </div>
 </body>
 </html>

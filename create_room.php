@@ -2,19 +2,24 @@
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $room = preg_replace('/[^a-zA-Z0-9]/', '', $_POST['room']);
-    $player_name = htmlspecialchars($_POST['player_name']);
-    $player_id = uniqid();
-    
-    // Initialize session storage if not exists
+    $room = substr(preg_replace('/[^a-zA-Z0-9]/', '', $_POST['room'] ?? ''), 0, 20);
+    $player_name = substr(htmlspecialchars($_POST['player_name'] ?? ''), 0, 20);
+
+    if (empty($room) || empty($player_name)) {
+        header("Location: online.php?error=invalid_input");
+        exit;
+    }
+
+    // Initialize rooms array if needed
     if (!isset($_SESSION['rooms'])) {
         $_SESSION['rooms'] = [];
     }
-    
-    // Create new room
+
+    // Create room with timestamp and player
+    $player_id = uniqid('player_', true);
     $_SESSION['rooms'][$room] = [
-        'creator' => $player_id,
-        'creator_name' => $player_name,
+        'created_at' => time(),
+        'creator_id' => $player_id,
         'players' => [
             $player_id => [
                 'name' => $player_name,
@@ -23,8 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]
         ]
     ];
-    
-    header("Location: room.php?room=$room&id=$player_id");
+
+    header("Location: room.php?room=".urlencode($room)."&player_id=".urlencode($player_id));
     exit;
 }
 

@@ -1,35 +1,77 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Play vs Computer</title>
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/game.css">
+    <title>Play vs Computer</title>
+    <link rel="stylesheet" href="css/game.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .choices {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .choice {
+            padding: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .choice:hover {
+            border-color: #6a11cb;
+        }
+        button {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Choose Your Move</h2>
-    <form method="POST" action="result_cpu.php">
-      <div class="choice-container">
-        <label class="choice">
-          <input type="radio" name="choice" value="rock" required>
-          <span class="icon rock">✊</span>
-          Rock
-        </label>
-        <label class="choice">
-          <input type="radio" name="choice" value="paper">
-          <span class="icon paper">✋</span>
-          Paper
-        </label>
-        <label class="choice">
-          <input type="radio" name="choice" value="scissors">
-          <span class="icon scissors">✌️</span>
-          Scissors
-        </label>
-      </div>
-      <button type="submit" class="game-btn">Play</button>
-    </form>
-  </div>
+    <div class="container">
+        <h1>Play Against Computer</h1>
+        <form action="result_cpu.php" method="POST">
+            <div class="choices">
+                <label>
+                    <input type="radio" name="choice" value="rock" required>
+                    <div class="choice">✊ Rock</div>
+                </label>
+                <label>
+                    <input type="radio" name="choice" value="paper">
+                    <div class="choice">✋ Paper</div>
+                </label>
+                <label>
+                    <input type="radio" name="choice" value="scissors">
+                    <div class="choice">✌️ Scissors</div>
+                </label>
+            </div>
+            <button type="submit">Play</button>
+        </form>
+    </div>
 </body>
 </html>

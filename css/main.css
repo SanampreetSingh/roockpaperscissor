@@ -1,62 +1,18 @@
-/* Base Styles */
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
-
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  line-height: 1.6;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
 }
-
+a {
+    text-decoration: none;
+}
 .container {
-  width: 100%;
-  max-width: 800px;
-  min-height: 400px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  padding: 2.5rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-h1, h2, h3, h4 {
-  color: #2c3e50;
-  margin-bottom: 1.5rem;
-}
-
-.game-btn {
-  display: inline-block;
-  padding: 1rem 2rem;
-  background: linear-gradient(90deg, #6a11cb, #2575fc);
-  color: white;
-  text-decoration: none;
-  border-radius: 50px;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.3s;
-  border: none;
-  cursor: pointer;
-  margin: 0.5rem;
-}
-
-.game-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.btn-group {
-  margin-top: 2rem;
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
 }
