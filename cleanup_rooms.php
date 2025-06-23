@@ -4,7 +4,7 @@ foreach (glob("storage/rooms/*.json") as $file) {
     $activePlayers = 0;
     
     foreach ($data['players'] as $p) {
-        if (time() - $p['last_active'] < 60) {
+        if (time() - ($p['last_active'] ?? 0) < 3600) { // 1 hour timeout
             $activePlayers++;
         }
     }
