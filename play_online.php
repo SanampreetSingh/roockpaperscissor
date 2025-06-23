@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-// Validate all required parameters exist
 if (!isset($_GET['room'], $_GET['id'], $_GET['opponent'])) {
     header("Location: online.php?error=invalid_parameters");
     exit;
@@ -11,12 +10,18 @@ $room = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room']);
 $player = $_GET['id'];
 $opponent = $_GET['opponent'];
 
+// Verify room exists
+$roomData = "storage/rooms/$room.json";
+if (!file_exists($roomData)) {
+    header("Location: waiting.php?room=$room&player=$player&opponent=".urlencode($opponent));
+    exit;
+}
+
 // Store game info in session
-$_SESSION['current_game'] = [
-    'room' => $room,
-    'player_id' => $player,
-    'opponent' => $opponent
-];
+$_SESSION['current_game'] = compact('room', 'player', 'opponent');
+?>
+<!-- Rest of your existing HTML -->
+
 ?>
 
 <!DOCTYPE html>
