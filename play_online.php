@@ -11,6 +11,18 @@ $_SESSION['current_game'] = [
     'opponent' => $opponent
 ];
 ?>
+<script>
+
+setInterval(() => {
+    fetch('connection_check.php?room=<?= $room ?>')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.connected) {
+                window.location.href = 'waiting.php?room=<?= $room ?>';
+            }
+        });
+}, 5000);
+</script>
 
 <!DOCTYPE html>
 <html lang="en">

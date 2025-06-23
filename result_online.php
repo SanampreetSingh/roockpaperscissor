@@ -1,64 +1,72 @@
 <?php
 session_start();
+
+// Implement file locking
 $room = $_POST['room'];
-$player = $_POST['player'];
-$choice = $_POST['choice'];
-$opponent = $_POST['opponent'];
+$lockFile = "storage/rooms/$room.lock";
+$lock = fopen($lockFile, 'c');
+flock($lock, LOCK_EX);
 
-$path = "storage/rooms/$room.json";
-
-// Initialize score if not exists
-if (!isset($_SESSION['online_score'])) {
-    $_SESSION['online_score'] = ['win' => 0, 'lose' => 0, 'tie' => 0];
-}
-
-// Check if opponent left
-if (!file_exists($path)) {
-    header("Location: waiting.php?room=$room&player=$player&opponent=".urlencode($opponent));
-    exit;
-}
-
-$data = json_decode(file_get_contents($path), true);
-$data[$player]['choice'] = $choice;
-file_put_contents($path, json_encode($data));
-
-// Wait for opponent's move
-$opponentChoice = null;
-$wait = 0;
-
-while ($wait < 10) {
-    $data = json_decode(file_get_contents($path), true);
+try {
+    $roomData = "storage/rooms/$room.json";
+    $data = json_decode(file_get_contents($roomData), true);
     
-    foreach ($data as $id => $info) {
-        if ($id !== $player && isset($info['choice'])) {
-            $opponentChoice = $info['choice'];
-            break;
+    // Store player move
+    $player = $_POST['player'];
+    $data['players'][$player] = [
+        'choice' => $_POST['choice'],
+        'last_active' => time()
+    ];
+
+    // Wait for opponent's move (max 10 seconds)
+    $opponentFound = false;
+    for ($i = 0; $i < 5; $i++) {
+        foreach ($data['players'] as $id => $p) {
+            if ($id !== $player && isset($p['choice'])) {
+                $opponentFound = true;
+                break 2;
+            }
         }
+        sleep(2);
+        clearstatcache();
+        $data = json_decode(file_get_contents($roomData), true);
+    }
+
+    if (!$opponentFound) {
+        // Opponent timeout - award win
+        $_SESSION['online_score']['win'] = ($_SESSION['online_score']['win'] ?? 0) + 1;
+        unlink($roomData);
+        ?>
+        <h3>Opponent timed out - You win!</h3>
+        <?php
+    } else {
+        // Normal game resolution
+        $result = determineWinner($data['players'][$player]['choice'], 
+                                $data['players'][array_keys($data['players'])[0]]['choice']);
+        $_SESSION['online_score'][$result]++;
+        ?>
+        <h3>You <?= $result ?>!</h3>
+        <?php
     }
     
-    if ($opponentChoice !== null) break;
-    sleep(1);
-    $wait++;
+    // Reset room for rematch
+    foreach ($data['players'] as &$p) {
+        $p['choice'] = null;
+    }
+    file_put_contents($roomData, json_encode($data));
+    
+} finally {
+    flock($lock, LOCK_UN);
+    fclose($lock);
 }
 
-function getResult($you, $them) {
-    if ($you === $them) return "tie";
-    if (
-        ($you == 'rock' && $them == 'scissors') ||
-        ($you == 'scissors' && $them == 'paper') ||
-        ($you == 'paper' && $them == 'rock')
-    ) return "win";
-    return "lose";
-}
-
-if ($opponentChoice) {
-    $result = getResult($choice, $opponentChoice);
-    $_SESSION['online_score'][$result]++;
-    unlink($path);
-} else {
-    $result = "Opponent did not respond in time";
+function determineWinner($p1, $p2) {
+    if ($p1 === $p2) return 'tied';
+    $wins = ['rock' => 'scissors', 'paper' => 'rock', 'scissors' => 'paper'];
+    return $wins[$p1] === $p2 ? 'won' : 'lost';
 }
 ?>
+
 
 <!DOCTYPE html>
 <html>

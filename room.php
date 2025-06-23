@@ -1,60 +1,77 @@
 <?php
 session_start();
 $room = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room']);
-$playerId = $_GET['id'];
-$roomPath = "storage/rooms/$room.json";
+$player = $_GET['id'];
 
-// Check if room file exists
-if (!file_exists($roomPath)) {
-    header("Location: online.php?error=room_not_found");
-    exit;
-}
+// Atomic file operations
+$roomFile = "storage/rooms/$room.lock";
+$roomData = "storage/rooms/$room.json";
 
-$data = json_decode(file_get_contents($roomPath), true);
+// Implement file locking
+$lock = fopen($roomFile, 'c');
+flock($lock, LOCK_EX);
 
-// If already two players, redirect to play
-if (count($data['players']) === 2) {
-    $opponentName = "";
-    foreach ($data['players'] as $id => $player) {
-        if ($id !== $playerId) {
-            $opponentName = $player['name'];
-            break;
+try {
+    if (!file_exists($roomData)) {
+        header("Location: online.php?error=room_expired");
+        exit;
+    }
+
+    $data = json_decode(file_get_contents($roomData), true);
+
+    // Handle player reconnection
+    if (!isset($data['players'][$player])) {
+        if (count($data['players']) >= 2) {
+            header("Location: online.php?error=room_full");
+            exit;
+        }
+        $data['players'][$player] = ['choice' => null, 'last_active' => time()];
+    } else {
+        $data['players'][$player]['last_active'] = time();
+    }
+
+    // Cleanup inactive players (>30 seconds)
+    foreach ($data['players'] as $id => $playerData) {
+        if (time() - $playerData['last_active'] > 30) {
+            unset($data['players'][$id]);
         }
     }
-    header("Location: play_online.php?room=$room&id=$playerId&opponent=".urlencode($opponentName));
-    exit;
-}
 
-// If creator, show waiting screen
-if ($data['creator'] === $playerId) {
-    // Check for new joins periodically
-    header("Refresh: 5"); // Auto-refresh every 5 seconds
+    file_put_contents($roomData, json_encode($data));
+
+    // Redirect to appropriate screen
+    if (count($data['players']) === 2) {
+        $opponent = null;
+        foreach ($data['players'] as $id => $p) {
+            if ($id !== $player) $opponent = $p['name'] ?? 'Opponent';
+        }
+        header("Location: play_online.php?room=$room&id=$player&opponent=".urlencode($opponent));
+        exit;
+    }
+
+    // Show waiting room
     ?>
     <!DOCTYPE html>
     <html>
-    <!-- Waiting room HTML -->
-    <div class="waiting-room">
-      <h2>Room: <?= htmlspecialchars($room) ?></h2>
-      <p>Waiting for opponent to join...</p>
-      <p>Share this room ID: <strong><?= $room ?></strong></p>
-      <div class="loading-spinner"></div>
-      Refresh is automatic
-      <a href="index.php" class="game-btn">Cancel</a>
-    </div>
+    <head>
+        <meta http-equiv="refresh" content="3">
+        <title>Waiting Room</title>
+        <style>
+            .spinner { /* Loading animation */ }
+        </style>
+    </head>
+    <body>
+        <h2>Waiting for opponent...</h2>
+        <p>Connected players: <?= count($data['players']) ?>/2</p>
+        <div class="spinner"></div>
+        <p>This page refreshes automatically</p>
+        <a href="index.php">Cancel</a>
+    </body>
+    </html>
     <?php
-    exit;
+} finally {
+    flock($lock, LOCK_UN);
+    fclose($lock);
 }
-
-// If player is trying to join
-$playerData = [
-    'name' => $_GET['player_name'] ?? 'Player',
-    'choice' => null
-];
-$data['players'][$playerId] = $playerData;
-file_put_contents($roomPath, json_encode($data));
-
-// Redirect to play screen
-$creatorName = $data['creator_name'];
-header("Location: play_online.php?room=$room&id=$playerId&opponent=".urlencode($creatorName));
-exit;
 ?>
+
