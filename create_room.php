@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $room = preg_replace('/[^a-zA-Z0-9]/', '', $_POST['room']);
     $player_name = htmlspecialchars($_POST['player_name']);
@@ -15,13 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'players' => [
             $playerId => [
                 'name' => $player_name,
-                'choice' => null
+                'choice' => null,
+                'last_active' => time()
             ]
         ]
     ];
     
     file_put_contents($roomPath, json_encode($data));
-    header("Location: room.php?room=$room&id=$playerId");
+    header("Location: room.php?room=$room&id=$playerId&player_name=".urlencode($player_name));
     exit;
 } else {
     header("Location: online.php");

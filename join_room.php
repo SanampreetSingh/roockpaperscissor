@@ -3,7 +3,7 @@ session_start();
 
 // Validate and sanitize input
 $room = isset($_GET['room']) ? preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room']) : '';
-$player_name = isset($_GET['player_name']) ? htmlspecialchars($_GET['player_name']) : 'Player';
+$player_name = isset($_GET['player_name']) ? htmlspecialchars($_GET['player_name']) : '';
 
 if (empty($room) || empty($player_name)) {
     header("Location: online.php?error=invalid_input");

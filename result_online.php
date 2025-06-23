@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-// 1. Validate all required parameters
+// Validate all required parameters
 $required_params = ['room', 'player', 'opponent', 'choice'];
 foreach ($required_params as $param) {
     if (!isset($_POST[$param])) {
@@ -10,17 +10,17 @@ foreach ($required_params as $param) {
     }
 }
 
-// 2. Sanitize inputs
+// Sanitize inputs
 $room = preg_replace('/[^a-zA-Z0-9]/', '', $_POST['room']);
 $player = $_POST['player'];
 $choice = $_POST['choice'];
 $opponent = $_POST['opponent'];
 
-// 3. File paths and locking
+// File paths and locking
 $roomFile = "storage/rooms/$room.lock";
 $roomData = "storage/rooms/$room.json";
 
-// 4. Atomic file operations with proper locking
+// Atomic file operations with proper locking
 $lock = fopen($roomFile, 'c+');
 if (!flock($lock, LOCK_EX)) {
     header("Location: online.php?error=room_busy");
@@ -28,7 +28,7 @@ if (!flock($lock, LOCK_EX)) {
 }
 
 try {
-    // 5. Load and validate room data
+    // Load and validate room data
     if (!file_exists($roomData)) {
         header("Location: online.php?error=room_expired");
         exit;
@@ -40,7 +40,7 @@ try {
         exit;
     }
 
-    // 6. Update current player's choice
+    // Update current player's choice
     if (!isset($data['players'][$player])) {
         header("Location: online.php?error=player_not_found");
         exit;
@@ -49,7 +49,7 @@ try {
     $data['players'][$player]['choice'] = $choice;
     $data['players'][$player]['last_active'] = time();
 
-    // 7. Check opponent's status
+    // Check opponent's status
     $opponentChoice = null;
     $opponentActive = false;
     
@@ -64,7 +64,7 @@ try {
         }
     }
 
-    // 8. Determine game outcome
+    // Determine game outcome
     if ($opponentChoice !== null) {
         // Both players have submitted
         $result = determineWinner($choice, $opponentChoice);
@@ -89,7 +89,7 @@ try {
         exit;
     }
 
-    // 9. Update scores (only when game is complete)
+    // Update scores (only when game is complete)
     if (!isset($_SESSION['online_score'])) {
         $_SESSION['online_score'] = ['win' => 0, 'lose' => 0, 'tie' => 0];
     }
@@ -98,13 +98,11 @@ try {
         $_SESSION['online_score']['win']++;
     } elseif ($result === "You lose!") {
         $_SESSION['online_score']['lose']++;
-    } elseif (strpos($result, "win") !== false) {
-        $_SESSION['online_score']['win']++;
     } else {
         $_SESSION['online_score']['tie']++;
     }
 
-    // 10. Clean up completed game
+    // Clean up completed game
     if ($opponentChoice !== null || !$opponentActive) {
         unlink($roomData);
     } else {
