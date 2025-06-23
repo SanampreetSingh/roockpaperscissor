@@ -1,110 +1,98 @@
 <?php
 session_start();
 
-// Validate all required parameters
-$required_params = ['room', 'player', 'opponent', 'choice'];
-foreach ($required_params as $param) {
-    if (!isset($_POST[$param])) {
-        header("Location: online.php?error=missing_$param");
-        exit;
-    }
+// Get parameters from POST or session
+$room = $_POST['room'] ?? ($_SESSION['current_game']['room'] ?? '');
+$player = $_POST['player'] ?? ($_SESSION['current_game']['player_id'] ?? '');
+$opponent = $_POST['opponent'] ?? ($_SESSION['current_game']['opponent'] ?? '');
+$choice = $_POST['choice'] ?? '';
+
+if (empty($room) || empty($player) || empty($opponent) || empty($choice)) {
+    header("Location: online.php?error=missing_parameters");
+    exit;
 }
 
-$room = preg_replace('/[^a-zA-Z0-9]/', '', $_POST['room']);
-$player = $_POST['player'];
-$choice = $_POST['choice'];
-$opponent = $_POST['opponent'];
-
-$roomFile = "storage/rooms/$room.lock";
-$roomData = "storage/rooms/$room.json";
-
-if (!file_exists($roomData)) {
+// Game logic
+if (!isset($_SESSION['rooms'][$room])) {
     header("Location: waiting.php?room=$room&player=$player&opponent=".urlencode($opponent));
     exit;
 }
 
-$lock = fopen($roomFile, 'c+');
-if (!flock($lock, LOCK_EX)) {
-    header("Location: online.php?error=room_busy");
+// Update player choice
+$_SESSION['rooms'][$room]['players'][$player]['choice'] = $choice;
+$_SESSION['rooms'][$room]['players'][$player]['last_active'] = time();
+
+// Check opponent's choice
+$opponentChoice = null;
+foreach ($_SESSION['rooms'][$room]['players'] as $id => $p) {
+    if ($id !== $player && isset($p['choice'])) {
+        $opponentChoice = $p['choice'];
+    }
+}
+
+if ($opponentChoice === null) {
+    // Wait for opponent
+    header("Refresh: 3");
+    ?>
+    <!DOCTYPE html>
+    <html><body>
+        <h2>Waiting for opponent to choose...</h2>
+        <p>Page will refresh automatically</p>
+    </body></html>
+    <?php
     exit;
 }
 
-try {
-    $data = json_decode(file_get_contents($roomData), true);
-    
-    // Reset choices for new game
-    $data['players'][$player]['choice'] = $choice;
-    $data['players'][$player]['last_active'] = time();
-    
-    // Check opponent's choice
-    $opponentChoice = null;
-    foreach ($data['players'] as $id => $p) {
-        if ($id !== $player && isset($p['choice'])) {
-            $opponentChoice = $p['choice'];
-            break;
-        }
-    }
-
-    if ($opponentChoice === null) {
-        // Save and wait for opponent
-        file_put_contents($roomData, json_encode($data));
-        header("Refresh: 3");
-        ?>
-        <!DOCTYPE html>
-        <html>
-        <head><title>Waiting</title></head>
-        <body>
-            <h2>Waiting for opponent to choose...</h2>
-            <p>This page will refresh automatically</p>
-        </body>
-        </html>
-        <?php
-        exit;
-    }
-
-    // Determine winner
-    $result = determineWinner($choice, $opponentChoice);
-    
-    // Update scores
-    if (!isset($_SESSION['online_score'])) {
-        $_SESSION['online_score'] = ['win' => 0, 'lose' => 0, 'tie' => 0];
-    }
-    
-    switch ($result) {
-        case "win": $_SESSION['online_score']['win']++; break;
-        case "lose": $_SESSION['online_score']['lose']++; break;
-        default: $_SESSION['online_score']['tie']++;
-    }
-    
-    // Reset choices for rematch but keep room active
-    foreach ($data['players'] as &$p) {
-        $p['choice'] = null;
-    }
-    file_put_contents($roomData, json_encode($data));
-
-} finally {
-    flock($lock, LOCK_UN);
-    fclose($lock);
-}
-
+// Determine winner
 function determineWinner($p1, $p2) {
     if ($p1 === $p2) return "tie";
     $wins = ['rock'=>'scissors', 'scissors'=>'paper', 'paper'=>'rock'];
     return $wins[$p1] === $p2 ? "win" : "lose";
 }
+
+$result = determineWinner($choice, $opponentChoice);
+
+// Update scores
+if (!isset($_SESSION['online_score'])) {
+    $_SESSION['online_score'] = ['win' => 0, 'lose' => 0, 'tie' => 0];
+}
+$_SESSION['online_score'][$result]++;
+
+// Reset choices for rematch
+foreach ($_SESSION['rooms'][$room]['players'] as &$p) {
+    $p['choice'] = null;
+}
+
+// Store current game in session
+$_SESSION['current_game'] = compact('room', 'player', 'opponent');
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <title>Game Result</title>
     <style>
-        /* Your existing styles here */
+               body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        .result { margin: 20px 0; font-size: 1.2em; }
+        .choice { font-weight: bold; color: #2c3e50; }
+        .scoreboard { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px auto; max-width: 300px; }
+        .btn { display: inline-block; padding: 10px 20px; margin: 10px; background: #2c3e50; color: white; text-decoration: none; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <!-- Your existing result display here -->
-    <!-- Important: Update Play Again link to include all parameters -->
-    <a href="play_online.php?room=<?= $room ?>&id=<?= $player ?>&opponent=<?= urlencode($opponent) ?>" 
-       class="btn">Play Again</a>
+    <h2>Game Result</h2>
+    <p>You chose: <?= htmlspecialchars($choice) ?></p>
+    <p>Opponent chose: <?= htmlspecialchars($opponentChoice) ?></p>
+    <h3>You <?= $result ?>!</h3>
+    
+    <div class="scoreboard">
+        <p>Wins: <?= $_SESSION['online_score']['win'] ?></p>
+        <p>Losses: <?= $_SESSION['online_score']['lose'] ?></p>
+        <p>Ties: <?= $_SESSION['online_score']['tie'] ?></p>
+    </div>
+    
+    <a href="play_online.php?room=<?= $room ?>&id=<?= $player ?>&opponent=<?= urlencode($opponent) ?>">
+        Play Again
+    </a>
+    <a href="index.php">Main Menu</a>
 </body>
 </html>

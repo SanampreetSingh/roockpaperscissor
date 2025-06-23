@@ -1,13 +1,12 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Online Multiplayer</title>
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/online.css">
-  <style>
-    .form-container {
+    <title>Rock Paper Scissors Online</title>
+    <style>
+       .form-container {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -33,29 +32,29 @@
         transform: translateY(0);
       }
     }
-  </style>
+    </style>
 </head>
 <body>
-  <div class="form-container">
-    <h1>Rock Paper Scissors Online</h1>
+    <div class="form-container">
+        <h1>Rock Paper Scissors Online</h1>
     
-    <div class="form-section join-form" style="animation-delay: 0.2s;">
-      <h2>Join Existing Room</h2>
-      <form action="join_room.php" method="GET">
-        <input type="text" name="room" placeholder="Room ID" required>
-        <input type="text" name="player_name" placeholder="Your Name" required>
-        <button type="submit">Join Room</button>
-      </form>
+        <div class="form-section join-form">
+            <h2>Join Room</h2>
+            <form action="join_room.php" method="GET">
+                <input type="text" name="room" placeholder="Room ID" required>
+                <input type="text" name="player_name" placeholder="Your Name" required>
+                <button type="submit">Join Room</button>
+            </form>
+        </div>
+        
+        <div class="form-section create-form">
+            <h2>Create Room</h2>
+            <form action="create_room.php" method="POST">
+                <input type="text" name="room" placeholder="Room Name" required>
+                <input type="text" name="player_name" placeholder="Your Name" required>
+                <button type="submit">Create Room</button>
+            </form>
+        </div>
     </div>
-    
-    <div class="form-section create-form" style="animation-delay: 0.4s;">
-      <h2>Create New Room</h2>
-      <form action="create_room.php" method="POST">
-        <input type="text" name="room" placeholder="Room Name" required>
-        <input type="text" name="player_name" placeholder="Your Name" required>
-        <button type="submit">Create Room</button>
-      </form>
-    </div>
-  </div>
 </body>
 </html>

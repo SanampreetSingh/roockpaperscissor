@@ -1,3 +1,26 @@
+<?php
+session_start();
+
+// Session cleanup for abandoned rooms (runs on every page load)
+if (isset($_SESSION['rooms'])) {
+    foreach ($_SESSION['rooms'] as $room => $data) {
+        $inactive = true;
+        foreach ($data['players'] as $player) {
+            if (time() - ($player['last_active'] ?? 0) < 3600) { // 1 hour timeout
+                $inactive = false;
+                break;
+            }
+        }
+        if ($inactive) {
+            unset($_SESSION['rooms'][$room]);
+        }
+    }
+}
+?>
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
